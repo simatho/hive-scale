@@ -37,6 +37,7 @@ Da einige Software-Features nicht rechtzeitig fertiggestellt werden konnten, wer
 - _backend/ota_update.php_: Liefert die Firmware-Datei auf dem Server aus (momentan noch keine Kontrolle, ob Firmware überhaupt aktualisiert werden muss).
 - Neue Firmware-Klasse _Updater_: Prüft auf neues Update (ist an dieser Stelle bereits darauf vorbereitet, vom Server die Antwort "nicht aktualisieren" zu bekommen).
 - _firmware/main.cpp_: Neue Befehle _autoUpdate_ (Prüft auf neues Update und aktualisiert falls der Server dazu anweist) und _update_ (erzwingt ein Update) hinzugefügt.
+- Mehrere kleinere Änderungen und Verbesserungen, Refactoring
 
 #### Version 0.9 (21.06.2016, Präsentationsstand HSA)
 - An der HSA präsentierte und so auch zur Bewertung abgegebene Version

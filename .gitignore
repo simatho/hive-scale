@@ -1,0 +1,6 @@
+firmware/settings.h
+backend/mysql.php
+*.bak
+*.kicad_pcb-bak
+*.htaccess
+*.bin

@@ -16,6 +16,9 @@ String Updater::getVersion() {
 }
 
 void Updater::update(const String& filename) {
+	//SPIFFS.end(); // Beende alle Operationen auf dem SPIF-FS
+	delete v_r_bridgeADC;
+	delete v_p_oneWire;
 	t_httpUpdate_return ret = ESPhttpUpdate.update(String ("https://") + cfg_otaHost + "/" +  filename, this->getVersion(), cfg_sha1Fingerprint);
 	switch(ret) {
 	case HTTP_UPDATE_FAILED:
@@ -28,4 +31,6 @@ void Updater::update(const String& filename) {
 		Serial.println("HTTP_UPDATE_OK");
 		break;
 	}
+	ESP.restart();
+	//SPIFFS.begin(); // Falls das Update fehlgeschlagen ist oder kein Update verfügbar war: SPIFFS wieder starten
 }

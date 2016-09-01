@@ -14,13 +14,17 @@
 // -------------------------------------------------------------------------------------------------
 #ifndef disableOTA
 #include <ESP8266httpUpdate.h>
+#include "FS.h"
 #endif
 #include "settings.h"
 #include "version.h"
+#include "ISL2610x.h"
+#include <OneWire.h>
 // -------------------------------------------------------------------------------------------------
 // Definition von Konstanten
 // -------------------------------------------------------------------------------------------------
-
+extern ISL2610x * v_r_bridgeADC;
+extern OneWire * v_p_oneWire;
 // -------------------------------------------------------------------------------------------------
 // Klassendeklaration
 // -------------------------------------------------------------------------------------------------
@@ -88,20 +92,26 @@ public:
 
 	/**
 	 * @brief      Sucht auf dem in "settings.h" hinterlegten Update-Server nach
-	 *             Updates. Die Updates werden per https übertragen, deshalb muss
-	 *             der SHA1-Fingerprint des verwendeten Zertifikats ebenfalls
-	 *             hinterlegt werden. Hier kann ein beliebiges - auch
-	 *             selbst-signiertes Zertifikat verwendet werden, allerdings sollte
-	 *             beim Zertifikatswechsel aufgepasst werden, sonst könnte das
-	 *             Update fehlschlagen. (Alle ESPs gleichzeitig updaten, eine Weile
-	 *             lang beide Fingerprints hinterlegen, ...) Von der Verwendung von
-	 *             http anstatt von https raten wir explizit ab!
+	 *             Updates. Die Updates werden per https übertragen, deshalb
+	 *             muss der SHA1-Fingerprint des verwendeten Zertifikats
+	 *             ebenfalls hinterlegt werden. Hier kann ein beliebiges - auch
+	 *             selbst-signiertes Zertifikat verwendet werden, allerdings
+	 *             sollte beim Zertifikatswechsel aufgepasst werden, sonst
+	 *             könnte das Update fehlschlagen. (Alle ESPs gleichzeitig
+	 *             updaten, eine Weile lang beide Fingerprints hinterlegen, ...)
+	 *             Von der Verwendung von http anstatt von https raten wir
+	 *             explizit ab!
+	 *
+	 *             Standardmäßig macht diese Funktion ein "normales" Update,
+	 *             d.h. sie zwingt den Server nicht, die Updatedatei
+	 *             auszuliefern, sondern lässt den Server entscheiden, ob ein
+	 *             Update notwendig ist
 	 *
 	 * @param[in]  filename  Name der aufzurufenden Datei. Dies kann ein Skript
 	 *                       sein ("ota_update.php") oder auch eine einfache
 	 *                       Datei (z.B. "firmware.ino.bin")
 	 */
-	void update(const String& filename = "ota_update.php?force=1");
+	void update(const String& filename = "ota_update.php");
 };
 
 #endif __UPDATER__

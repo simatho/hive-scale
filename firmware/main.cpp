@@ -30,6 +30,7 @@
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266HTTPClient.h>
 #include <SPI.h>
+#include "FS.h"
 #include "SOC.h"
 #include "Webserver.h"
 #include "ISL2610x.h"
@@ -40,11 +41,11 @@
 
 ESP8266WiFiMulti WiFiMulti;
 SOC stateOfCharge;
-ISL2610x * v_r_bridgeADC = new ISL2610x(ISL26102, 5, 15, SPI);
+ISL2610x * v_r_bridgeADC;
 OneWire * v_p_oneWire;
 DS18B20 v_ds_extTemp;
 Webserver server;
-MassSensor massSensor(16043.95, 178e-6);
+MassSensor * massSensor = new MassSensor(16043.95, 178e-6);
 #ifndef disableOTA
 Updater updater;
 #endif
@@ -55,7 +56,7 @@ void setup() {
 	delay(10);
 	WiFiMulti.addAP(cfg_wifiSSID, cfg_wifiPass);
 
-	Serial.print("\nBienenstockwaage v" + Updater::getVersion() + "\nReset: " + ESP.getResetReason() + "\nVerbindungsaufbau...");
+	Serial.print("\nBienenstockwaage v" + Updater::getVersion() + "\nReset: " + ESP.getResetReason() + "\nReset Info:" + ESP.getResetInfo() + "\nVerbindungsaufbau...");
 
 	while(WiFiMulti.run() != WL_CONNECTED) {
 		Serial.print(".");
@@ -66,6 +67,7 @@ void setup() {
 	Serial.println(WiFi.localIP());
 	delay(500);
 	server.init();
+	v_r_bridgeADC = new ISL2610x(ISL26102, 5, 15, SPI)
 	v_r_bridgeADC->init();
 	struct s_ChConfig ch1Config = {0x00, 0x7};
 	v_r_bridgeADC->setChConfig(CH1, ch1Config);
@@ -73,8 +75,8 @@ void setup() {
 	v_ds_extTemp.setOneWire(v_p_oneWire);
 	v_ds_extTemp.searchAddress();
 	v_ds_extTemp.setRes(9);
-	#ifdef cfg_debugEnabled
-	Serial.println(server.getHelloString());
+	#ifdef cfg_noMeasurements
+	sendNext = -1; // Nicht automatisch senden
 	#endif
 }
 
@@ -104,14 +106,14 @@ void loop() {
 			massSensor.calibGain(result_V, knownMass_kg);
 			Serial.println("Gain gesetzt");
 		} else if(input == "reset") {
-			ESP.reset();
+			ESP.restart();
 		#ifndef disableOTA
-		} else if(input == "update") {
+		} else if(input == "forceUpdate") {
 			Serial.println("\nHartes Update gestartet...");
-			updater.update();
-		} else if(input == "autoUpdate") {
+			updater.update("ota_update.php?force=1");
+		} else if(input == "update") {
 			Serial.println("\nAutomatisches Update gestartet...");
-			updater.update("ota_update.php");
+			updater.update();
 		#endif
 		} else if(input == "stopM") {
 			// Keine Messungen mehr durchführen
@@ -131,7 +133,6 @@ void loop() {
 			Serial.println(F("Unbekannter Befehl.\nOptionen:\n\thallo\tEinzelmessung\n\tstopM\tMessung beenden\n\tstartM\tMessung starten\n\tupdate\tUpdate starten"));
 		}
 	}
-
 	if(sendNext < millis()) {
 		// Daten zum Server schicken
 
@@ -164,6 +165,10 @@ void loop() {
 		url += String (ext_sensorid[7], HEX); //Seriennummer des Temperatursensors
 		url += "&ver=";
 		url += Updater::getVersion();
+		url += "&mac=";
+		url += WiFi.macAddress();
+		url += "&reset=";
+		url += ESP.getResetReason();
 		time_t now = time(nullptr);
 		if(now > 0) { // Wenn die Zeit via NTP bereits ermittelt werden konnte
 			url += "&sensetime=";
@@ -189,10 +194,11 @@ void loop() {
 				// Antwort vom Server Seriell ausgeben
 				// TODO: Herausfinden, ob nötig oder ob die Antwort einfach ignoriert werden könnnte.
 				String payload = http.getString();
-				if(payload == "\nErfolg"){
+				if(payload == "Erfolg"){
 					Serial.println("Erfolg.");
-				} else if (payload == "\nUpdate") {
+				} else if (payload == "Update") {
 					#ifndef disableOTA
+					Serial.println("Update.");
 					updater.update();
 					#else
 					Serial.println(F("Vom Server zum Updaten angewiesen worden, OTA-Updatesupport nicht integriert!"));

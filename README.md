@@ -30,6 +30,18 @@ Unser Ansatz zielt explizit darauf ab, nachgebaut und weiterentwickelt zu werden
 Da einige Software-Features nicht rechtzeitig fertiggestellt werden konnten, werden diese sukzessive nachgereicht.
 
 ### Versionsgeschichte:
+#### Für die nächsten Versionen angedachte Features:
+- Verwendung der [SPIFFS](https://github.com/pellepl/spiffs)-Bibliothek zum Abspeichern der Konfiguration sowie der Messdaten
+- Daten nur alle paar Messzyklen übertragen (und im SPIFFS zwischenspeichern)
+- Server kann dem Client eine geänderte Zykluszeit vorgeben
+
+#### Version 0.9.7 (01.09.2016)
+- Webinterface: Geräteverwaltung integriert, per Login gesichert
+- Anzeigen von Daten wie: Letztes Sendedatum, Firmwareversion
+- Erstellen von Geräteklassen
+- Einstellen von: Firmwareupdate, Geräteklasse
+- Upload von neuen Firmware-Versionen
+
 #### Version 0.9.6 (26.06.2016)
 - Erste öffentliche Version
 - _firmware/main.cpp_: Instruktionen hinzugefügt, wie die Einstellungs-Datei _settings.h_ beschaffen sein muss. Außerdem Option hinzugefügt, das folgende Feature (z.B. aus Speicherplatzgründen) wieder deaktivieren zu können.

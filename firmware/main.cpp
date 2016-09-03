@@ -43,9 +43,9 @@ ESP8266WiFiMulti WiFiMulti;
 SOC stateOfCharge;
 ISL2610x * v_r_bridgeADC;
 OneWire * v_p_oneWire;
-DS18B20 v_ds_extTemp;
+DS18B20 * v_ds_extTemp;
 Webserver server;
-MassSensor * massSensor = new MassSensor(16043.95, 178e-6);
+MassSensor * massSensor;
 #ifndef disableOTA
 Updater updater;
 #endif
@@ -67,17 +67,19 @@ void setup() {
 	Serial.println(WiFi.localIP());
 	delay(500);
 	server.init();
-	v_r_bridgeADC = new ISL2610x(ISL26102, 5, 15, SPI)
+	v_r_bridgeADC = new ISL2610x(ISL26102, 5, 15, SPI);
 	v_r_bridgeADC->init();
+	massSensor = new MassSensor(16043.95, 178e-6);
 	struct s_ChConfig ch1Config = {0x00, 0x7};
 	v_r_bridgeADC->setChConfig(CH1, ch1Config);
 	v_p_oneWire = new OneWire(4);
-	v_ds_extTemp.setOneWire(v_p_oneWire);
-	v_ds_extTemp.searchAddress();
-	v_ds_extTemp.setRes(9);
-	#ifdef cfg_noMeasurements
+	v_ds_extTemp = new DS18B20();
+	v_ds_extTemp->setOneWire(v_p_oneWire);
+	v_ds_extTemp->searchAddress();
+	v_ds_extTemp->setRes(9);
+#ifdef cfg_noMeasurements
 	sendNext = -1; // Nicht automatisch senden
-	#endif
+#endif
 }
 
 void loop() {
@@ -92,7 +94,7 @@ void loop() {
 			Serial.println("Offset wird ermittelt...");
 			float result_V;
 			v_r_bridgeADC->readVoltage(CH1, result_V);
-			massSensor.setOffset(result_V);
+			massSensor->setOffset(result_V);
 			Serial.println("Offset gesetzt");
 		} else if(input == "calibGain") {
 			Serial.println("Bekanntes Gewicht auf Waage stellen");
@@ -103,18 +105,22 @@ void loop() {
 			Serial.println(knownMass_kg, 3);
 			Serial.println("Gain wird ermittelt...");
 			v_r_bridgeADC->readVoltage(CH1, result_V);
-			massSensor.calibGain(result_V, knownMass_kg);
+			massSensor->calibGain(result_V, knownMass_kg);
 			Serial.println("Gain gesetzt");
 		} else if(input == "reset") {
 			ESP.restart();
-		#ifndef disableOTA
+#ifndef disableOTA
 		} else if(input == "forceUpdate") {
 			Serial.println("\nHartes Update gestartet...");
 			updater.update("ota_update.php?force=1");
 		} else if(input == "update") {
 			Serial.println("\nAutomatisches Update gestartet...");
+			delete v_r_bridgeADC;
+			delete v_p_oneWire;
+			delete massSensor;
+			delete v_ds_extTemp;
 			updater.update();
-		#endif
+#endif
 		} else if(input == "stopM") {
 			// Keine Messungen mehr durchführen
 			sendNext = -1; // Größte mögliche Zahl ~ etwa 50 Tage
@@ -123,10 +129,10 @@ void loop() {
 			// Messungen wieder einschalten
 			sendNext = 0;
 			Serial.println("Automatische Messungen reaktiviert");
-		} else if(input == "hallo"){
+		} else if(input == "hallo") {
 			Serial.println("Messung gestartet...");
 			Serial.println(server.getHelloString());
-		} else if(input == "sleep"){
+		} else if(input == "sleep") {
 			Serial.println("Gehe 2s schlafen...");
 			ESP.deepSleep(2000000, WAKE_RF_DEFAULT);
 		} else {
@@ -143,26 +149,26 @@ void loop() {
 		float result_dgC; // A/D-Temperatur
 		v_r_bridgeADC->readTemp(result_dgC);
 		float temp_ext;
-		v_ds_extTemp.readTemp(temp_ext);
+		v_ds_extTemp->readTemp(temp_ext);
 		uint8_t * ext_sensorid = nullptr;
-		v_ds_extTemp.getAddr(ext_sensorid);
+		v_ds_extTemp->getAddr(ext_sensorid);
 
 		// Request-URL zusammenbauen
 		String url = cfg_receiverAddress; //Request URL
 		url += "?weight=";
-		url += String (massSensor.calcMass(result_V), 4); //Berechnete Masse
+		url += String(massSensor->calcMass(result_V), 4); //Berechnete Masse
 		url += "&chipmillis=";
 		url += millis(); // Millisekunden seit CPU-Start. Momentan nur zu Debug-Zwecken
 		url += "&chipid=";
 		url += ESP.getChipId(); // Chip-Seriennummer. Momentan nur zu Debug-Zwecken (Und um "echte" Daten von Testdaten unterscheiden zu können)
 		url += "&temp_int=";
-		url += String (result_dgC, 3);
+		url += String(result_dgC, 3);
 		url += "&vcc=";
 		url += (String) stateOfCharge.getVoltage(); // Versorgungsspannung
 		url += "&temp_ext=";
-		url += String (temp_ext, 3); // Temperatur am externen Sensor
+		url += String(temp_ext, 3); // Temperatur am externen Sensor
 		url += "&sid_ext=";
-		url += String (ext_sensorid[7], HEX); //Seriennummer des Temperatursensors
+		url += String(ext_sensorid[7], HEX); //Seriennummer des Temperatursensors
 		url += "&ver=";
 		url += Updater::getVersion();
 		url += "&mac=";
@@ -177,10 +183,10 @@ void loop() {
 
 		// Daten abschicken
 		HTTPClient http;
-		#ifdef cfg_debugEnabled
+#ifdef cfg_debugEnabled
 		Serial.print("URL: ");
 		Serial.println(url);
-		#endif
+#endif
 		http.begin(url);
 		int httpCode = http.GET();
 
@@ -194,15 +200,15 @@ void loop() {
 				// Antwort vom Server Seriell ausgeben
 				// TODO: Herausfinden, ob nötig oder ob die Antwort einfach ignoriert werden könnnte.
 				String payload = http.getString();
-				if(payload == "Erfolg"){
+				if(payload == "Erfolg") {
 					Serial.println("Erfolg.");
-				} else if (payload == "Update") {
-					#ifndef disableOTA
+				} else if(payload == "Update") {
+#ifndef disableOTA
 					Serial.println("Update.");
 					updater.update();
-					#else
+#else
 					Serial.println(F("Vom Server zum Updaten angewiesen worden, OTA-Updatesupport nicht integriert!"));
-					#endif
+#endif
 
 				}
 			}

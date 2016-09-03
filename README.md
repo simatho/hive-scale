@@ -35,6 +35,10 @@ Da einige Software-Features nicht rechtzeitig fertiggestellt werden konnten, wer
 - Daten nur alle paar Messzyklen übertragen (und im SPIFFS zwischenspeichern)
 - Server kann dem Client eine geänderte Zykluszeit vorgeben
 
+#### Version 0.9.7.2 (03.09.2016)
+- Kleinere Verbesserungen am Webinterface
+- firmware war nicht kompilierbar, korrigiert
+
 #### Version 0.9.7 (01.09.2016)
 - Webinterface: Geräteverwaltung integriert, per Login gesichert
 - Anzeigen von Daten wie: Letztes Sendedatum, Firmwareversion

@@ -59,17 +59,17 @@ String Webserver::getHelloString(){
 	v_r_bridgeADC->readVoltage(CH1, result_V);
 	hello += String (result_V * 1e3, 4);
 	hello += " mV\nDaraus berechnetes Gewicht: ";
-	hello += String (massSensor.calcMass(result_V), 4);
+	hello += String (massSensor->calcMass(result_V), 4);
 	float result_dgC; // A/D-Temperatur
 	v_r_bridgeADC->readTemp(result_dgC);
 	hello += " kg\nTemperatur des A/D-Wandlers: ";
 	hello += String (result_dgC, 3);
 	hello += " Grad Celsius\nTemperatur des externen Sensors: ";
 	float temp_ext;
-	v_ds_extTemp.readTemp(temp_ext);
+	v_ds_extTemp->readTemp(temp_ext);
 	hello += String (temp_ext, 3);
 	hello += " Grad Celsius\nVersion: ";
-	hello += Updater::getVersion();
+	//hello += Updater::getVersion();
 	hello += F(" (Build Date: "  __DATE__  ", " __TIME__ ")\nMAC: ");
 	hello += WiFi.macAddress();
 	return hello;

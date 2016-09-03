@@ -29,8 +29,8 @@
 // -------------------------------------------------------------------------------------------------
 extern SOC stateOfCharge;
 extern ISL2610x * v_r_bridgeADC;
-extern MassSensor massSensor;
-extern DS18B20 v_ds_extTemp;
+extern MassSensor * massSensor;
+extern DS18B20 * v_ds_extTemp;
 // -------------------------------------------------------------------------------------------------
 // Definition von Konstanten
 // -------------------------------------------------------------------------------------------------
